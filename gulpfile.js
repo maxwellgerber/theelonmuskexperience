@@ -10,12 +10,13 @@ var runSequence = require('run-sequence');
 var path = require('path');
 var del = require('del');
 var merge = require('merge-stream');
+
 gulp.task('default', ['build-dev']);
 
 gulp.task('serve', function(){
     plugins.connect.server({
-        root:'.'
-    })
+        root:'public'
+    });
 });
 
 gulp.task('build-dev', function (callback) {
@@ -31,8 +32,9 @@ gulp.task('build-prod', function (callback) {
 });
 
 gulp.task('develop', function (callback) {
-    runSequence('clean', 'sass',
-        ['js', 'partials', 'images', 'index', 'fonts'],
+    runSequence('clean',
+        ['sass', 'bower', 'js', 'content', 'fonts'],
+        'index',
         'watch','serve',
         callback);
 });
@@ -118,33 +120,23 @@ gulp.task('js-prod', function () {
         .pipe(gulp.dest(output));
 });
 
-gulp.task('partials', function () {
-    var input = ['./src/js/**/*.html', './src/*.html', '!./src/index.html'];
-    var output = './public/js';
-    return gulp.src(input)
-        .pipe(gulp.dest(output))
-        .pipe(plugins.livereload());
-});
-
-gulp.task('partials-prod', function () {
-    var input = ['./src/js/**/*.html', './src/*.html', '!./src/index.html'];
-    var output = './public/js';
-    return gulp.src(input)
-        .pipe(gulp.dest(output))
-        .pipe(plugins.htmlmin({collapseWhitespace: true}));
-});
-
-gulp.task('images', function () {
+gulp.task('content', function () {
     var favicon = './src/favicon.ico'
     var favStream = gulp.src(favicon)
         .pipe(gulp.dest('./public'));
 
-    var input = './src/images/*';
-    var output = './public/images';
-    var imgStream =  gulp.src(input)
-        .pipe(gulp.dest(output))
+    var images = './src/images/*';
+    var imagesOut = './public/images';
+    var imgStream =  gulp.src(images)
+        .pipe(gulp.dest(imagesOut))
         .pipe(plugins.livereload());
-    return merge(imgStream, favStream);
+
+    var audio = './src/audio/*';
+    var audioOut = './public/audio';
+    var audioStream =  gulp.src(audio)
+        .pipe(gulp.dest(audioOut))
+        .pipe(plugins.livereload());
+    return merge(imgStream, favStream, audioStream);
 
 });
 
@@ -158,9 +150,10 @@ gulp.task('index', function () {
     var input = './src/index.html';
     var output = './public';
     var sources = gulp.src('./**/*.js', {read: false, cwd: path.join(__dirname, '/src')});
+    var lib = gulp.src('./lib/*.js', {read: false, cwd: path.join(__dirname, '/public')});
     return gulp.src(input)
         .pipe(plugins.inject(sources))
-        .pipe(plugins.inject(gulp.src(mainBowerFiles(), {read: false}), {name: 'bower'}))
+        .pipe(plugins.inject(lib, {name: 'lib'}))
         .pipe(gulp.dest(output))
         .pipe(plugins.livereload());
 });
@@ -171,7 +164,6 @@ gulp.task('index-prod', function () {
     var sources = gulp.src('./js/*.js', {read: false, cwd: path.join(__dirname, '/public')});
     return gulp.src(input)
         .pipe(plugins.inject(sources))
-        .pipe(plugins.inject(gulp.src(mainBowerFiles(), {read: false}), {name: 'bower'}))
         .pipe(plugins.htmlmin({collapseWhitespace: true}))
         .pipe(gulp.dest(output));
 });
@@ -185,3 +177,8 @@ gulp.task('watch', function () {
     gulp.watch('./src/stylesheets/**/*.scss', ['sass']);
 });
 
+gulp.task('bower', function(){
+    var output = './public/lib';
+    gulp.src(mainBowerFiles())
+        .pipe(gulp.dest(output))
+});

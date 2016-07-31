@@ -1,30 +1,70 @@
-function addClassTemporary(element, newClass, duration){
-    element = $(element);
-    element.click(
-        function() {
-            element.addClass(newClass);
-            //wait for animation to finish before removing classes
-            window.setTimeout( function(){
-                element.removeClass(newClass);
-            }, duration);
+(function () {
+    var sounds = [];
+    var howls = [];
+    var talking = false;
+    var chinClasses = ['chew', 'chomp'];
 
+    for (var i = 2; i < 6; i++) {
+        sounds[i - 2] = 'audio/EM' + i + '.mp3';
+    }
+
+    for (var i = 0; i < sounds.length; i++) {
+        howls[i] = new Howl({
+            src: [sounds[i]],
+            preload: true,
+            onload: function (num) {
+                return function () {
+                    console.log('Sound ' + sounds[num] + ' loaded');
+                }
+            }(i)
         });
-}
+    }
 
-//addClassTemporary('#chin', 'down', 200);
+    $(document).ready(function () {
 
-function dropElementDown(element, distance, duration){
-    var elem = $(element);
-    var orig = elem.css('transform');
-    elem.css('transform', 'translateY(' + distance +'px)');
-    window.setTimeout( function(){
-        element.css('transform', orig);
-    }, duration);
-}
+        var chin = $("#chin");
 
-while(1){
-    window.setInterval( function(){
-        dropElementDown('#chin', 20, 240);
-    }, 3000);
+        var container = $(".centered");
 
-}
+        chin.click(function () {
+
+            if (talking) return;
+            talking = true;
+
+            var soundToPlay = getRandomInt(0, howls.length - 1);
+            var classToUse = getRandomInt(0, chinClasses.length - 1);
+
+            howls[soundToPlay].play();
+            howls[soundToPlay].on('end', function () {
+                console.log('Finished!');
+                chin.removeClass();
+                container.removeClass('shake');
+                talking = false;
+            });
+
+            chin.addClass(chinClasses[classToUse]);
+            container.addClass('shake');
+            function handleAnimationEnd(e) {
+                console.log("that's a wrap");
+                chin.removeClass(chinClasses[classToUse]);
+                var nextClassToUse = getRandomIntExcluding(0, chinClasses.length - 1, classToUse)
+                chin.addClass(chinClasses[nextClassToUse]);
+                classToUse = nextClassToUse;
+            }
+
+            function attatchRecursiveAnimationEndListener() {
+                onAnimationEnd(chin, function () {
+                    handleAnimationEnd();
+                    if (talking) {
+                        attatchRecursiveAnimationEndListener();
+                    }
+                });
+            }
+
+            attatchRecursiveAnimationEndListener();
+        });
+
+
+    });
+})();
+

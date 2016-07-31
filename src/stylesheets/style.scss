@@ -1,0 +1,20 @@
+html{
+    height: 100%;
+    background-color: #bf0000;
+    body{
+        height: 80%;
+    }
+}
+
+.centered{
+    position: absolute;
+    width: 20%;
+    height: auto;
+    left: 40%;
+    top: 20%;
+}
+
+.down{
+    transform-timing-function: ease-in;
+    transform: translate(0px, 15px);
+}
